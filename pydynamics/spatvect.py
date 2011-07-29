@@ -109,3 +109,11 @@ def mcI(mass, CoM, I):
     rbi[3:6,3:6] = mass*np.eye(3)
     return rbi
 
+
+def vector3d(mvector):
+    """vector representation of spacial transform"""
+    rcrosst = mvector[0:3,0:3].transpose() * mvector[3:6,0:3];
+    rx = rcrosst[1,2];
+    ry = rcrosst[2,0];
+    rz = rcrosst[0,1];    
+    return [rx, ry, rz]

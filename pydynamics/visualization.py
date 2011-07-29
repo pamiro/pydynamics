@@ -32,8 +32,10 @@ Created on Jul 21, 2011
 @author: Pavel Mironchyk Pavel Mironchyk <pmironchyk at gmail.com>
 '''
 
+
 from copy import copy
-import numpy as np
+import numpy    as np
+import spatvect as sv
 
 class CubeFigure:
     def __init__(self, w, h, d):
@@ -173,3 +175,47 @@ class Sphere(Ellipsoid):
     def __init__(self, r):
         Ellipsoid.__init__(self, r, r, r)
 
+
+def plotktree(ax, model):
+    
+    coox = sv.Xtrans([1.0, 0.0, 0.0])
+    cooy = sv.Xtrans([0.0, 1.0, 0.0])
+    cooz = sv.Xtrans([0.0, 0.0, 1.0])
+    
+    rootbody = model.bodies[0]
+    
+    def linear_shift(x,y,z): return (x - rootbody.CoM[0], 
+                                     y - rootbody.CoM[1],
+                                     z - rootbody.CoM[2]) 
+    
+    if  rootbody.figure != None:
+        rootbody.figure.draw(ax, linear_shift)
+    rootbody.Xup = sv.Xtrans([0.0,0.0,0.0])
+    
+    for ind in range(1,len(model.parent)+1):
+        body = model.bodies[ind]
+        pbody = model.bodies[model.parent[ind - 1]]
+        body.Xup = pbody.joints[body].Xj * pbody.joints[body].Xtree * pbody.Xup
+        v  = sv.vector3d(body.Xup)
+        vn = sv.vector3d(pbody.Xup)
+        
+        ax.plot([v[0],vn[0]],[v[1],vn[1]],[v[2],vn[2]], "r")
+        ax.plot([v[0]],[v[1]], [v[2]],'ys', markersize=10)
+        
+        e = sv.vector3d(coox*body.Xup)
+        ax.plot([v[0],e[0]],[v[1],e[1]],[v[2],e[2]], "b")
+
+        e = sv.vector3d(cooy*body.Xup)
+        ax.plot([v[0],e[0]],[v[1],e[1]],[v[2],e[2]], "r")
+
+        e = sv.vector3d(cooz*body.Xup)
+        ax.plot([v[0],e[0]],[v[1],e[1]],[v[2],e[2]], "g")
+
+        def transform(x,y,z): 
+            v = sv.vector3d(sv.Xtrans([x - body.CoM[0],
+                                       y - body.CoM[1],
+                                       z -body.CoM[2]])*body.Xup)
+            
+            return (v[0],v[1],v[2]) 
+    
+        if body.figure != None: body.figure.draw(ax,transform)

@@ -31,6 +31,7 @@ Created on Jul 29, 2011
 
 import numpy    as np
 import spatvect as sv
+from copy import copy
 
 class RigidBody:
     """Rigid body with CoM and spacial Inertia """
@@ -64,7 +65,7 @@ class Joint:
 
         self.figure = None
 
-class Model:
+class GenericModel:
     def __init__(self):
         self.bodies = []
         self.joints = [] 
@@ -81,23 +82,26 @@ class Model:
         if isinstance(o, Joint):
             self.addjoint(o)
 
-class KTree:
+class KTree(GenericModel):
     """Construct a kinematics tree from a model""" 
      
-    def __init__(self, model):
-        self.model = model
+    def __init__(self, model = None):
+        GenericModel.__init__(self)
+        if model != None:
+            self.bodies = copy(model.bodies)
+            self.joints = copy(model.joints)
         self.update()
         
     def update_parent(self):
         self.parent = []
-        if len(self.model.bodies) > 0:
-            for bindex in range(1, len(self.model.bodies)):
-                body = self.model.bodies[bindex]
-                for joint in self.model.joints:
+        if len(self.bodies) > 0:
+            for bindex in range(1, len(self.bodies)):
+                body = self.bodies[bindex]
+                for joint in self.joints:
                     if body in joint.bodies:        
                         ind = (joint.bodies.index(body) + 1) % 2
                         other_body = joint.bodies[ind]
-                        other_body_ind = self.model.bodies.index(other_body)        
+                        other_body_ind = self.bodies.index(other_body)        
                         if other_body_ind < bindex:
                             self.parent.append(other_body_ind)
         return self.parent
@@ -106,9 +110,9 @@ class KTree:
     def update_representation(self):
         self.predecessor = []
         self.successor = []
-        for j in self.model.joints:
-            self.predecessor.append(self.model.bodies.index(j.bodies[0])) 
-            self.successor.append(self.model.bodies.index(j.bodies[1]))    
+        for j in self.joints:
+            self.predecessor.append(self.bodies.index(j.bodies[0])) 
+            self.successor.append(self.bodies.index(j.bodies[1]))    
             
         return (self.predecessor, self.successor)
 
