@@ -49,6 +49,9 @@ class RigidBody:
         self.mcI  = None
         
         self.figure = None
+        
+        # External force
+        self.f_ext = None
 
         
 class Joint:
@@ -64,11 +67,18 @@ class Joint:
         self.Xtree = sv.Xtrans([0, 0, 0])
 
         self.figure = None
+        
+        self.q = 0.0
+        self.qd = 0.0
+        self.qdd = 0.0
 
 class GenericModel:
     def __init__(self):
         self.bodies = []
-        self.joints = [] 
+        self.joints = []
+        
+        # model gravity
+        self.a_grav = np.matrix([0,0,0,0,0,-9.81]).transpose(); 
  
     def addbody(self, b):
         self.bodies.append(b)

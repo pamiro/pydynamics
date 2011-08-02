@@ -34,7 +34,7 @@ import spatvect as sv
 from model import Joint
 
 class RevoluteJoint(Joint):
-    def __init__(self, bodyA, bodyB, q = 0.0):
+    def __init__(self, bodyA, bodyB, q):
         Joint.__init__(self, bodyA, bodyB)
         self.update(q)
     
@@ -48,7 +48,7 @@ class PrismaticsJoint(Joint):
         self.update(d)
     
     def update(self, d):
-        self.Xj = sv.Xtrans(np.array[0, 0, d])
+        self.Xj = sv.Xtrans(np.array([0, 0, d]))
         self.S  = np.matrix([0,0,0,0,0,1]).transpose();
 
 class HelicalJoint(Joint):
