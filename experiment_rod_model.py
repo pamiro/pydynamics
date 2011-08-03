@@ -12,7 +12,9 @@ import pydynamics.joints        as j
 import pydynamics.visualization as v
 import pydynamics.spatvect      as sv
 from   pydynamics.invdyn import invdyn
+from   pydynamics.fwdyn  import fwdyn_ab
 import math
+import os
 
 model = m.KTree()
 
@@ -35,8 +37,7 @@ q = [ 1.97746724216702,
       0.294565272647012,
       2.87460022633501,
       2.92098081384033,
-      -2.15128045457413,
-      2.95682165202307]
+      -2.15128045457413]
 
 qd = [ 0.914333896485891,
       -0.0292487025543176,
@@ -48,8 +49,7 @@ qd = [ 0.914333896485891,
       0.918984852785806,
       0.311481398313174,
       -0.928576642851621,
-      0.698258611737554,
-      0.867986495515101]
+      0.698258611737554]
 
 qdd = [0.357470309715547,
        0.515480261156667,
@@ -61,8 +61,7 @@ qdd = [0.357470309715547,
        -0.936334307245159,
        -0.446154030078220,
        -0.907657218737692,
-       -0.805736437528305,
-       0.646915656654585]
+       -0.805736437528305]
 
 nb    = 12
 bf    = 1.0
@@ -117,7 +116,15 @@ for i in range(0,len(parent)-1):
        
 model.update()
 
-print invdyn(model)
+tau = invdyn(model)
+new_qdd = fwdyn_ab(model)
+
+for i in range(0, len(new_qdd)):
+    if math.fabs(qdd[i] - new_qdd[i]) > 1e-13:
+        print "Test failed"
+        os._exit(-1) 
+    else:
+        print qdd[i]- new_qdd[i]
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
