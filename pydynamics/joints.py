@@ -29,6 +29,7 @@ Created on Jul 29, 2011
 @author: Pavel Mironchyk <p.mironchyk at gmail.com>
 '''
 
+import math
 import numpy    as np
 import spatvect as sv
 from model import Joint
@@ -60,20 +61,64 @@ class HelicalJoint(Joint):
         self.Xj = sv.Xrotz(q) * sv.Xtrans(np.array([0, 0, q*d]));
         self.S  = np.matrix([0, 0, 1, 0, 0, d]).transpose();
 
+
+def rbda_eq_4_12(qe):
+    p0, p1, p2, p3 = qe[0,0], qe[1,0], qe[2,0], qe[3,0]
+    return np.matrix([[p0**2+p1**2-0.5,  p1*p2+p0*p3,     p1*p3-p0*p2,],
+                      [p1*p2-p0*p3,      p0**2+p2**2-0.5, p2*p3+p0*p1 ],
+                      [p1*p3+p0*p2,      p2*p3-p0*p1,     p0**2+p3**2-0.5]]) * 2.0 
+
+def rbda_eq_4_13(qe):
+    p0, p1, p2, p3 = qe[0,0], qe[1,0], qe[2,0], qe[3,0]
+    return np.matrix([[-p1,  -p2, -p3],
+                      [ p0,  -p3,  p2],
+                      [ p3,   p0, -p1],
+                      [ -p2,  p1,  p0]]) * 0.5
+
+def normalize(qe):
+    sum = 0.0; 
+    for i in xrange(4): sum += qe[i,0]*qe[i,0]
+    qe_norm = qe / math.sqrt(sum)
+    return qe_norm
+
+
 class DoF6Joint(Joint):
-    def __init__(self, bodyA, bodyB, q):
+    def __init__(self, bodyA, bodyB, qe, qr):
         Joint.__init__(self, bodyA, bodyB)
-        if q == None:
-            self.q = np.zeros((6,1))
-        else:
-            self.q = q
+        
+        self.qe = qe
+        self.qr = qr
+        if qe is None:
+            theta = 0.0
+            ux    = 0.0
+            uy    = 0.0
+            uz    = 0.0
+            p0 = np.cos(theta/2)
+            p1 = np.sin(theta/2)*ux
+            p2 = np.sin(theta/2)*uy
+            p3 = np.sin(theta/2)*uz 
+            self.qe = np.matrix([p0, p1, p2, p3]).transpose()
+        if qr is None:
+            self.qr = np.matrix([0.0,0.0,0.0]).transpose()
+        
+        self.qe_norm = normalize(self.qe)
         self.qd = np.zeros((6,1))
         self.qdd = np.zeros((6,1))
-        self.update(self.q)
+        self.update(self.qe, self.qr)
         
-    def update(self, q):
-        e = sv.Xrotx(q[2,0])*sv.Xroty(q[1,0])*sv.Xrotz(q[0,0])
-        E = (e)[0:3,0:3]
-        r = -np.linalg.inv(E)*(np.matrix([q[3,0],q[4,0],q[5,0]]).transpose())
-        self.Xj = e*sv.Xtrans(r)
+    def update(self, qe, qr):
+        self.e = rbda_eq_4_12(qe)
+        self.r = -np.linalg.inv(self.e)*qr
+        self.Xj = sv.Xrot(self.e)*sv.Xtrans(self.r)
         self.S  = sv.mkdiagm(np.ones(6))
+
+    # thanks scbtx authors for the hint
+    def integrate_q(self, qd, dt):
+        w_body_frame, v_body_frame = (qd[0:3,0], qd[3:,0])
+        qed = rbda_eq_4_13(self.qe_norm) * w_body_frame
+        new_qe = normalize(self.qe + qed * dt)
+        qrd = self.e.transpose() * v_body_frame
+        new_qr = self.qr + qrd * dt
+        self.update(new_qe, new_qr)
+    
+    

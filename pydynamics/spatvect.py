@@ -68,6 +68,13 @@ def Xrotz(theta):
                       [0, 0, 0,-s, c, 0],
                       [0, 0, 0, 0, 0, 1]])
 
+def Xrot(E):
+    """spacial rotational transformation defined by rotational matrix E"""
+    m = np.resize(0.0, (6,6))
+    m[0:3,0:3] = E
+    m[3:6,3:6] = E
+    return m
+
 def Xtrans(r):
     """spacial linear transformation defined by 3D displacement vector r"""
     return np.matrix([
@@ -109,6 +116,12 @@ def mcI(mass, CoM, I):
     rbi[3:6,3:6] = mass*np.eye(3)
     return rbi
 
+def mkdiagm(arr):
+    nmarr = np.array([])
+    nmarr.resize((len(arr), len(arr)))
+    for i in range(0, len(arr)):
+        nmarr[i,i] = arr[i]  
+    return np.matrix(nmarr)
 
 def vector3d(mvector):
     """vector representation of spacial transform"""

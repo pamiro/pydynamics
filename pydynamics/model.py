@@ -71,6 +71,7 @@ class Joint:
         self.q = 0.0
         self.qd = 0.0
         self.qdd = 0.0
+        self.tau = 0.0
 
 class GenericModel:
     def __init__(self):
@@ -78,7 +79,7 @@ class GenericModel:
         self.joints = []
         
         # model gravity
-        self.a_grav = np.matrix([0,0,0,0,0,-9.81]).transpose(); 
+        self.a_grav = np.matrix([0,0,0,0,0, -9.81]).transpose(); 
  
     def addbody(self, b):
         self.bodies.append(b)
