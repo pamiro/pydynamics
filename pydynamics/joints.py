@@ -59,3 +59,21 @@ class HelicalJoint(Joint):
     def update(self, q, d):
         self.Xj = sv.Xrotz(q) * sv.Xtrans(np.array([0, 0, q*d]));
         self.S  = np.matrix([0, 0, 1, 0, 0, d]).transpose();
+
+class DoF6Joint(Joint):
+    def __init__(self, bodyA, bodyB, q):
+        Joint.__init__(self, bodyA, bodyB)
+        if q == None:
+            self.q = np.zeros((6,1))
+        else:
+            self.q = q
+        self.qd = np.zeros((6,1))
+        self.qdd = np.zeros((6,1))
+        self.update(self.q)
+        
+    def update(self, q):
+        e = sv.Xrotx(q[2,0])*sv.Xroty(q[1,0])*sv.Xrotz(q[0,0])
+        E = (e)[0:3,0:3]
+        r = -np.linalg.inv(E)*(np.matrix([q[3,0],q[4,0],q[5,0]]).transpose())
+        self.Xj = e*sv.Xtrans(r)
+        self.S  = sv.mkdiagm(np.ones(6))
