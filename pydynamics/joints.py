@@ -102,11 +102,14 @@ class DoF6Joint(Joint):
             self.qr = np.matrix([0.0,0.0,0.0]).transpose()
         
         self.qe_norm = normalize(self.qe)
-        self.qd = np.zeros((6,1))
-        self.qdd = np.zeros((6,1))
+        self.qd =  np.resize(0.0, (6,1))
+        self.qdd = np.resize(0.0, (6,1))
         self.update(self.qe, self.qr)
         
     def update(self, qe, qr):
+        self.qe = qe
+        self.qr = qr
+        
         self.e = rbda_eq_4_12(qe)
         self.r = -np.linalg.inv(self.e)*qr
         self.Xj = sv.Xrot(self.e)*sv.Xtrans(self.r)
