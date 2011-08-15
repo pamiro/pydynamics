@@ -117,8 +117,8 @@ def mcI(mass, CoM, I):
     return rbi
 
 def mkdiagm(arr):
-    nmarr = np.array([])
-    nmarr.resize((len(arr), len(arr)))
+    #nmarr = np.array([])
+    nmarr = np.resize(0.0,(len(arr), len(arr)))
     for i in range(0, len(arr)):
         nmarr[i,i] = arr[i]  
     return np.matrix(nmarr)

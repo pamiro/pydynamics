@@ -32,7 +32,6 @@ Created on Jul 21, 2011
 @author: Pavel Mironchyk Pavel Mironchyk <pmironchyk at gmail.com>
 '''
 
-
 from copy import copy
 import numpy    as np
 import spatvect as sv
@@ -68,8 +67,7 @@ class CubeFigure:
         xt = copy(x)
         yt = copy(y)
         zt = copy(z)
-    
-        
+            
         for i  in range(0,len(x)):
             for j  in range(0,len(x[i])):
                 xt[i][j], yt[i][j], zt[i][j] = transform(x[i][j], y[i][j], z[i][j])
@@ -176,7 +174,7 @@ class Sphere(Ellipsoid):
         Ellipsoid.__init__(self, r, r, r)
 
 
-def plotktree(ax, model):
+def plotktree(ax, model, fontsize = 8.0, joint_color = 'r'):
     
     coox = sv.Xtrans([1.0, 0.0, 0.0])
     cooy = sv.Xtrans([0.0, 1.0, 0.0])
@@ -190,18 +188,28 @@ def plotktree(ax, model):
     
     if  rootbody.figure != None:
         rootbody.figure.draw(ax, linear_shift)
-    rootbody.Xup = sv.Xtrans([0.0,0.0,0.0])
+
+    vn = sv.vector3d(rootbody.Xup)        
+    ax.plot([vn[0]],[vn[1]], [vn[2]],'gs', markersize=10)
+    ax.text(vn[0],vn[1],vn[2], rootbody.description(),fontsize=fontsize, rotation=0.0, color = joint_color)
     
     for ind in range(1,len(model.parent)+1):
         body = model.bodies[ind]
         pbody = model.bodies[model.parent[ind - 1]]
-        body.Xup = pbody.joints[body].Xj * pbody.joints[body].Xtree * pbody.Xup
+        joint = pbody.joints[body]
         v  = sv.vector3d(body.Xup)
         vn = sv.vector3d(pbody.Xup)
+
+        # drawing joint
+        ax.plot([v[0],vn[0]],[v[1],vn[1]],[v[2],vn[2]], color=joint_color)
+        ax.text(v[0]/2.0, 
+                v[1]/2.0,
+                v[2]/2.0, 
+                joint.description(),fontsize=fontsize, rotation=0.0, color = joint_color)
+
+        ax.plot([v[0]],[v[1]], [v[2]],'gs', markersize=3)
         
-        ax.plot([v[0],vn[0]],[v[1],vn[1]],[v[2],vn[2]], "r")
-        ax.plot([v[0]],[v[1]], [v[2]],'ys', markersize=10)
-        
+
         e = sv.vector3d(coox*body.Xup)
         ax.plot([v[0],e[0]],[v[1],e[1]],[v[2],e[2]], "b")
 
@@ -210,12 +218,36 @@ def plotktree(ax, model):
 
         e = sv.vector3d(cooz*body.Xup)
         ax.plot([v[0],e[0]],[v[1],e[1]],[v[2],e[2]], "g")
+        
+        
+        
+        body_transform = sv.Xtrans(body.CoM)*body.Xup
+        vcom = sv.vector3d(body_transform)
+        
+        ax.plot([v[0],vcom[0]],[v[1],vcom[1]],[v[2],vcom[2]], color='r')
+        
+        v = vcom
+        
+        ax.plot([v[0]],[v[1]],[v[2]],'ys', markersize=10)
+        ax.text(v[0],v[1],v[2], body.description(),fontsize=fontsize, rotation=0.0, color = joint_color)
+        
+        e = sv.vector3d(coox*body_transform)
+        ax.plot([v[0],e[0]],[v[1],e[1]],[v[2],e[2]], "b")
 
+        e = sv.vector3d(cooy*body_transform)
+        ax.plot([v[0],e[0]],[v[1],e[1]],[v[2],e[2]], "r")
+
+        e = sv.vector3d(cooz*body_transform)
+        ax.plot([v[0],e[0]],[v[1],e[1]],[v[2],e[2]], "g")
+
+        # Next visualize figures
         def transform(x,y,z): 
-            v = sv.vector3d(sv.Xtrans([x - body.CoM[0],
-                                       y - body.CoM[1],
-                                       z -body.CoM[2]])*body.Xup)
+            v = sv.vector3d(sv.Xtrans([x + body.CoM[0],
+                                       y + body.CoM[1],
+                                       z + body.CoM[2]])*body.Xup)
             
             return (v[0],v[1],v[2]) 
-    
         if body.figure != None: body.figure.draw(ax,transform)
+    
+    
+        

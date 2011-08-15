@@ -25,7 +25,39 @@
 
 
 '''
+This object-oriented library for rigid body dynamics simulations. 
+
+Modules include:
+
+    :mod:`pydynamics.sv`
+        defines various routines of spatial vector algebra
+
+    :mod:`pydynamics.model`
+        defines the :class:`~pydynamics.model.KTree` class.
+
+    :mod:`pydynamics.joints`
+        defines various types of joints that can be used in models
+
+    :mod:`pydynamics.minert`
+        defines various functions for constructing moment of intertia tensors
+
+    :func:`pydynamics.invdyn`
+        define function for calculating inverse dynamics of a model
+    
+    :func:`pydynamics.fwdyn_ab`
+        define function for calculating forward dynamics of a model (kinematic tree, articulated body)
+    
+
 Created on Jul 29, 2011
 
 @author: Pavel Mironchyk <p.mironchyk at gmail.com>
 '''
+
+import spatvect      as sv
+import model         
+import joints        
+import visualization as visual
+from pydynamics.inertia import InertiaTensor as minert
+from fwdyn  import fwdyn_ab
+from invdyn import invdyn
+import numpy as np

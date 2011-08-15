@@ -22,6 +22,7 @@
 #    ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 #    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 #    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from pydynamics.fwdyn import fwdyn_ab
 
 '''
 Created on Jul 29, 2011
@@ -35,43 +36,58 @@ from copy import copy
 
 class RigidBody:
     """Rigid body with CoM and spacial Inertia """
-    def __init__(self):         
-        
+    def __init__(self, mass, CoM, mI):         
         #joints that connect body to other bodies"""
         self.joints  = {}
-        
-        self.mass = 0.0
-        self.CoM  = np.array([0.0, 0.0, 0.0])
-        
+        self.mass = mass
+        self.CoM  = CoM        
         # spacial rigid body inertia
-        self.rbI  = None        
+        self.rbI  = sv.mcI(mass, CoM, mI)        
         # moment of inertia tensor
-        self.mcI  = None
-        
-        self.figure = None
-        
+        self.mI   = mI
         # External force
         self.f_ext = None
 
+        self.figure = None
         
+        self.Xup = None
+        
+        self.descr = "none"
+        
+    def position(self):
+        return sv.vector3d(self.Xup) + np.matrix(self.CoM)
+        
+    def description(self):
+        return self.descr
+    
+    def describe(self, text):
+        self.descr = text  
+      
 class Joint:
-    def __init__(self, bodyA, bodyB):
-        self.bodies = [bodyA, bodyB]
-        bodyA.joints[bodyB] = self  
-              
+    def __init__(self, transform, a, b):
+        self.bodies = [a, b]
+        a.joints[b] = self  
+                      
         # Join Transformation
         self.Xj = None
         # Joint Space
         self.S = None    
-        # spacial transformation to joint in body A to body B coordinates
-        self.Xtree = sv.Xtrans([0, 0, 0])
-
+        # Frame A to frame B transformation 
+        self.Xtree = transform
+        
         self.figure = None
         
-        self.q = 0.0
-        self.qd = 0.0
-        self.qdd = 0.0
         self.tau = 0.0
+
+    def integrate_q(self, qd, step):
+        self.q += qd*step
+
+    def description(self):
+        return self.descr
+    
+    def describe(self, text):
+        self.descr = text
+
 
 class GenericModel:
     def __init__(self):
@@ -79,12 +95,15 @@ class GenericModel:
         self.joints = []
         
         # model gravity
-        self.a_grav = np.matrix([0,0,0,0,0, -9.81]).transpose(); 
+        self.a_grav = np.matrix([0,0,0,0,0, 9.81]).transpose(); 
  
     def addbody(self, b):
         self.bodies.append(b)
     
     def addjoint(self, j):
+        for body in j.bodies:
+            if not (body in self.bodies):
+                self.bodies.append(body)
         self.joints.append(j)
     
     def add(self, o):
@@ -94,14 +113,10 @@ class GenericModel:
             self.addjoint(o)
 
 class KTree(GenericModel):
-    """Construct a kinematics tree from a model""" 
+    """Kinematic tree""" 
      
-    def __init__(self, model = None):
+    def __init__(self):
         GenericModel.__init__(self)
-        if model != None:
-            self.bodies = copy(model.bodies)
-            self.joints = copy(model.joints)
-        self.update()
         
     def update_parent(self):
         self.parent = []
@@ -131,3 +146,31 @@ class KTree(GenericModel):
         self.update_parent()
         self.update_representation
 
+
+class KClosedLoop(GenericModel):
+    """Kinematic closed loop"""
+    pass
+
+
+class World:
+    def __init__(self):
+        self.models = []
+        self.base = RigidBody(0.0, [0.0, 0.0, 0.0], np.matrix([[0, 0, 0],
+                                                                [0, 0, 0],
+                                                                [0, 0, 0]]))
+        self.base.Xup = sv.Xtrans([0.0, 0.0, 0.0])
+
+        self.base.describe("world base")
+
+    def add(self, model):        
+        self.models.append(model)
+        
+    def update(self):
+        for model in self.models: model.update()
+        
+    def simulate(self, step):
+        for model in self.models: 
+            fwdyn_ab(model)
+            for joint in model.joints:
+                joint.qd += joint.qdd * step
+                joint.integrate_q(joint.qd, step)

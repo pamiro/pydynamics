@@ -81,11 +81,22 @@ def normalize(qe):
     qe_norm = qe / math.sqrt(sum)
     return qe_norm
 
-
-class DoF6Joint(Joint):
-    def __init__(self, bodyA, bodyB, qe, qr):
+class DoF0Joint(Joint):
+    def __init__(self, bodyA, bodyB):
         Joint.__init__(self, bodyA, bodyB)
         
+        self.Xj = sv.Xrot(np.matrix([[1.0,0.0,0.0],
+                                     [0.0,1.0,0.0],
+                                     [0.0,0.0,1.0]]))*sv.Xtrans([0.0,0.0,0.0])
+        self.S  = np.matrix([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]).transpose()
+
+    def update(self, q):
+        pass
+    
+        
+class DoF6Joint(Joint):
+    def __init__(self, transform, a, b, qe = None, qr = None):
+        Joint.__init__(self, transform, a, b)
         self.qe = qe
         self.qr = qr
         if qe is None:
@@ -104,12 +115,12 @@ class DoF6Joint(Joint):
         self.qe_norm = normalize(self.qe)
         self.qd =  np.resize(0.0, (6,1))
         self.qdd = np.resize(0.0, (6,1))
+        self.describe(" 6DoF Joint")
         self.update(self.qe, self.qr)
         
     def update(self, qe, qr):
         self.qe = qe
         self.qr = qr
-        
         self.e = rbda_eq_4_12(qe)
         self.r = -np.linalg.inv(self.e)*qr
         self.Xj = sv.Xrot(self.e)*sv.Xtrans(self.r)
@@ -117,7 +128,7 @@ class DoF6Joint(Joint):
 
     # thanks scbtx authors for the hint
     def integrate_q(self, qd, dt):
-        w_body_frame, v_body_frame = (qd[0:3,0], qd[3:,0])
+        w_body_frame, v_body_frame = (qd[0:3], qd[3:])
         qed = rbda_eq_4_13(self.qe_norm) * w_body_frame
         new_qe = normalize(self.qe + qed * dt)
         qrd = self.e.transpose() * v_body_frame

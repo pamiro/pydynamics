@@ -54,10 +54,13 @@ def fwdyn_ab(model):
         
         body.IA = body.rbI
         body.pA = sv.cross_m_f(body.v, body.rbI*body.v) 
-        
+
         if body.f_ext != None:
             body.pA = body.pA - body.f_ext
-
+        
+        if pbody.Xup != None:
+            body.Xup = joint.Xup * pbody.Xup
+        
             
     for i in range(len(model.parent)-1,-1, -1):
         pbody_ind = model.parent[i]
@@ -68,11 +71,15 @@ def fwdyn_ab(model):
         joint.U = body.IA * joint.S
         joint.d = joint.S.transpose() * joint.U
         joint.u = joint.tau - (joint.S.transpose() * body.pA)
-        joint.d_inv = np.linalg.inv(joint.d)
+        
+        if(np.linalg.det(joint.d) == 0.0):
+            joint.d_inv = joint.d*0.0  # trick for zero dof joint
+        else:
+            joint.d_inv = np.linalg.inv(joint.d)
 
         if model.parent[i] != 0:
             Ia = body.IA - (joint.d_inv * joint.U * joint.U.transpose())     
-            pa = body.pA + (Ia*body.c) + joint.U * joint.d_inv * joint.u         
+            pa = body.pA + (Ia*body.c) + joint.U * joint.d_inv * joint.u             
             pbody.IA = pbody.IA + (joint.Xup.transpose() * Ia * joint.Xup)
             pbody.pA = pbody.pA + (joint.Xup.transpose() * pa)
             
@@ -88,6 +95,7 @@ def fwdyn_ab(model):
             body.a = joint.Xup * -model.a_grav + body.c
         else:
             body.a = joint.Xup * pbody.a + body.c
+            
         joint.qdd = joint.d_inv*(joint.u - joint.U.transpose()*body.a);
         body.a = body.a + joint.S * joint.qdd
         qdd.append(joint.qdd)
