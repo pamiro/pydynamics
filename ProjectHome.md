@@ -1,0 +1,1 @@
+Python library for performing modelling of rigid body dynamics.
